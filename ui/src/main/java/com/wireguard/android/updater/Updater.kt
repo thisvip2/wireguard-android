@@ -264,7 +264,7 @@ object Updater {
             throw IOException("Update could not be fetched: ${connection.responseCode}")
 
         var downloadedByteLen: ULong = 0UL
-        val totalByteLen = (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) connection.contentLengthLong else connection.contentLength).toLong().toULong()
+        val totalByteLen = connection.contentLengthLong.toULong()
         val fileBytes = ByteArray(1024 * 32 /* 32 KiB */)
         val digest = MessageDigest.getInstance("SHA-256")
         emitProgress(Progress.Downloading(downloadedByteLen, totalByteLen), true)
@@ -375,6 +375,15 @@ object Updater {
 
         if (installerIsGooglePlay(context))
             return
+
+        if (BuildConfig.BUILD_TYPE == "googleplay") {
+            if (installer(context).isNotEmpty()) {
+                applicationScope.launch {
+                    emitProgress(Progress.Corrupt(null))
+                }
+            }
+            return
+        }
 
         if (if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
                 @Suppress("DEPRECATION")
